@@ -8,128 +8,128 @@ import {
   useContractMetadata,
   useTotalCirculatingSupply,
   Web3Button,
-} from "@thirdweb-dev/react";
-import { BigNumber, utils } from "ethers";
-import type { NextPage } from "next";
-import { useMemo, useState } from "react";
-import styles from "../styles/Theme.module.css";
-import { parseIneligibility } from "../utils/parseIneligibility";
-import { myEditionDropContractAddress, tokenId } from "../const/yourDetails";
+} from '@thirdweb-dev/react'
+import { BigNumber, utils } from 'ethers'
+import type { NextPage } from 'next'
+import { useMemo, useState } from 'react'
+import styles from '../styles/Theme.module.css'
+import { parseIneligibility } from '../utils/parseIneligibility'
+import { myEditionDropContractAddress, tokenId } from '../const/yourDetails'
 
 const Home: NextPage = () => {
-  const address = useAddress();
-  const [quantity, setQuantity] = useState(1);
-  const { contract: editionDrop } = useContract(myEditionDropContractAddress);
-  const { data: contractMetadata } = useContractMetadata(editionDrop);
+  const address = useAddress()
+  const [quantity, setQuantity] = useState(1)
+  const { contract: editionDrop } = useContract(myEditionDropContractAddress)
+  const { data: contractMetadata } = useContractMetadata(editionDrop)
 
-  const claimConditions = useClaimConditions(editionDrop);
+  const claimConditions = useClaimConditions(editionDrop)
   const activeClaimCondition = useActiveClaimConditionForWallet(
     editionDrop,
     address,
     tokenId
-  );
-  const claimerProofs = useClaimerProofs(editionDrop, address || "", tokenId);
+  )
+  const claimerProofs = useClaimerProofs(editionDrop, address || '', tokenId)
   const claimIneligibilityReasons = useClaimIneligibilityReasons(
     editionDrop,
     {
       quantity,
-      walletAddress: address || "",
+      walletAddress: address || '',
     },
     tokenId
-  );
+  )
 
-  const claimedSupply = useTotalCirculatingSupply(editionDrop, tokenId);
+  const claimedSupply = useTotalCirculatingSupply(editionDrop, tokenId)
 
   const totalAvailableSupply = useMemo(() => {
     try {
-      return BigNumber.from(activeClaimCondition.data?.availableSupply || 0);
+      return BigNumber.from(activeClaimCondition.data?.availableSupply || 0)
     } catch {
-      return BigNumber.from(1_000_000);
+      return BigNumber.from(1_000_000)
     }
-  }, [activeClaimCondition.data?.availableSupply]);
+  }, [activeClaimCondition.data?.availableSupply])
 
   const numberClaimed = useMemo(() => {
-    return BigNumber.from(claimedSupply.data || 0).toString();
-  }, [claimedSupply]);
+    return BigNumber.from(claimedSupply.data || 0).toString()
+  }, [claimedSupply])
 
   const numberTotal = useMemo(() => {
-    const n = totalAvailableSupply.add(BigNumber.from(claimedSupply.data || 0));
+    const n = totalAvailableSupply.add(BigNumber.from(claimedSupply.data || 0))
     if (n.gte(1_000_000)) {
-      return "";
+      return ''
     }
-    return n.toString();
-  }, [totalAvailableSupply, claimedSupply]);
+    return n.toString()
+  }, [totalAvailableSupply, claimedSupply])
 
   const priceToMint = useMemo(() => {
     const bnPrice = BigNumber.from(
       activeClaimCondition.data?.currencyMetadata.value || 0
-    );
+    )
     return `${utils.formatUnits(
       bnPrice.mul(quantity).toString(),
       activeClaimCondition.data?.currencyMetadata.decimals || 18
-    )} ${activeClaimCondition.data?.currencyMetadata.symbol}`;
+    )} ${activeClaimCondition.data?.currencyMetadata.symbol}`
   }, [
     activeClaimCondition.data?.currencyMetadata.decimals,
     activeClaimCondition.data?.currencyMetadata.symbol,
     activeClaimCondition.data?.currencyMetadata.value,
     quantity,
-  ]);
+  ])
 
   const maxClaimable = useMemo(() => {
-    let bnMaxClaimable;
+    let bnMaxClaimable
     try {
       bnMaxClaimable = BigNumber.from(
         activeClaimCondition.data?.maxClaimableSupply || 0
-      );
+      )
     } catch (e) {
-      bnMaxClaimable = BigNumber.from(1_000_000);
+      bnMaxClaimable = BigNumber.from(1_000_000)
     }
 
-    let perTransactionClaimable;
+    let perTransactionClaimable
     try {
       perTransactionClaimable = BigNumber.from(
         activeClaimCondition.data?.maxClaimablePerWallet || 0
-      );
+      )
     } catch (e) {
-      perTransactionClaimable = BigNumber.from(1_000_000);
+      perTransactionClaimable = BigNumber.from(1_000_000)
     }
 
     if (perTransactionClaimable.lte(bnMaxClaimable)) {
-      bnMaxClaimable = perTransactionClaimable;
+      bnMaxClaimable = perTransactionClaimable
     }
 
-    const snapshotClaimable = claimerProofs.data?.maxClaimable;
+    const snapshotClaimable = claimerProofs.data?.maxClaimable
 
     if (snapshotClaimable) {
-      if (snapshotClaimable === "0") {
+      if (snapshotClaimable === '0') {
         // allowed unlimited for the snapshot
-        bnMaxClaimable = BigNumber.from(1_000_000);
+        bnMaxClaimable = BigNumber.from(1_000_000)
       } else {
         try {
-          bnMaxClaimable = BigNumber.from(snapshotClaimable);
+          bnMaxClaimable = BigNumber.from(snapshotClaimable)
         } catch (e) {
           // fall back to default case
         }
       }
     }
 
-    let max;
+    let max
     if (totalAvailableSupply.lt(bnMaxClaimable)) {
-      max = totalAvailableSupply;
+      max = totalAvailableSupply
     } else {
-      max = bnMaxClaimable;
+      max = bnMaxClaimable
     }
 
     if (max.gte(1_000_000)) {
-      return 1_000_000;
+      return 1_000_000
     }
-    return max.toNumber();
+    return max.toNumber()
   }, [
     claimerProofs.data?.maxClaimable,
     totalAvailableSupply,
     activeClaimCondition.data?.maxClaimableSupply,
     activeClaimCondition.data?.maxClaimablePerWallet,
-  ]);
+  ])
 
   const isSoldOut = useMemo(() => {
     try {
@@ -139,16 +139,16 @@ const Home: NextPage = () => {
             0
           )) ||
         numberClaimed === numberTotal
-      );
+      )
     } catch (e) {
-      return false;
+      return false
     }
   }, [
     activeClaimCondition.data?.availableSupply,
     activeClaimCondition.isSuccess,
     numberClaimed,
     numberTotal,
-  ]);
+  ])
 
   const canClaim = useMemo(() => {
     return (
@@ -156,46 +156,46 @@ const Home: NextPage = () => {
       claimIneligibilityReasons.isSuccess &&
       claimIneligibilityReasons.data?.length === 0 &&
       !isSoldOut
-    );
+    )
   }, [
     activeClaimCondition.isSuccess,
     claimIneligibilityReasons.data?.length,
     claimIneligibilityReasons.isSuccess,
     isSoldOut,
-  ]);
+  ])
 
   const isLoading = useMemo(() => {
     return (
       activeClaimCondition.isLoading || claimedSupply.isLoading || !editionDrop
-    );
-  }, [activeClaimCondition.isLoading, editionDrop, claimedSupply.isLoading]);
+    )
+  }, [activeClaimCondition.isLoading, editionDrop, claimedSupply.isLoading])
 
   const buttonLoading = useMemo(
     () => isLoading || claimIneligibilityReasons.isLoading,
     [claimIneligibilityReasons.isLoading, isLoading]
-  );
+  )
   const buttonText = useMemo(() => {
     if (isSoldOut) {
-      return "Sold Out";
+      return 'Sold Out'
     }
 
     if (canClaim) {
       const pricePerToken = BigNumber.from(
         activeClaimCondition.data?.currencyMetadata.value || 0
-      );
+      )
       if (pricePerToken.eq(0)) {
-        return "Mint (Free)";
+        return 'Mint (Free)'
       }
-      return `Mint (${priceToMint})`;
+      return `Mint (${priceToMint})`
     }
     if (claimIneligibilityReasons.data?.length) {
-      return parseIneligibility(claimIneligibilityReasons.data, quantity);
+      return parseIneligibility(claimIneligibilityReasons.data, quantity)
     }
     if (buttonLoading) {
-      return "Checking eligibility...";
+      return 'Checking eligibility...'
     }
 
-    return "Claiming not available";
+    return 'Claiming not available'
   }, [
     isSoldOut,
     canClaim,
@@ -204,7 +204,7 @@ const Home: NextPage = () => {
     activeClaimCondition.data?.currencyMetadata.value,
     priceToMint,
     quantity,
-  ]);
+  ])
 
   return (
     <div className={styles.container}>
@@ -239,8 +239,8 @@ const Home: NextPage = () => {
                   {claimedSupply ? (
                     <p>
                       <b>{numberClaimed}</b>
-                      {" / "}
-                      {numberTotal || "∞"}
+                      {' / '}
+                      {numberTotal || '∞'}
                     </p>
                   ) : (
                     // Show loading state if we're still loading the supply
@@ -251,7 +251,7 @@ const Home: NextPage = () => {
 
               {claimConditions.data?.length === 0 ||
               claimConditions.data?.every(
-                (cc) => cc.maxClaimableSupply === "0"
+                (cc) => cc.maxClaimableSupply === '0'
               ) ? (
                 <div>
                   <h2>
@@ -289,19 +289,19 @@ const Home: NextPage = () => {
                       </div>
                     ) : (
                       <Web3Button
-                        contractAddress={editionDrop?.getAddress() || ""}
+                        contractAddress={editionDrop?.getAddress() || ''}
                         action={(cntr) => cntr.erc1155.claim(tokenId, quantity)}
                         isDisabled={!canClaim || buttonLoading}
                         onError={(err) => {
-                          console.error(err);
-                          alert("Error claiming NFTs");
+                          console.error(err)
+                          alert('Error claiming NFTs')
                         }}
                         onSuccess={() => {
-                          setQuantity(1);
-                          alert("Successfully claimed NFTs");
+                          setQuantity(1)
+                          alert('Successfully claimed NFTs')
                         }}
                       >
-                        {buttonLoading ? "Loading..." : buttonText}
+                        {buttonLoading ? 'Loading...' : buttonText}
                       </Web3Button>
                     )}
                   </div>
@@ -311,15 +311,13 @@ const Home: NextPage = () => {
           </>
         )}
       </div>
-      {/* Powered by thirdweb */}{" "}
-      <img
-        src="/logo.png"
-        alt="thirdweb Logo"
-        width={135}
-        className={styles.buttonGapTop}
-      />
+      {/* Powered by thirdweb */}{' '}
+      <div className={styles.container2}>
+        <img src="/logo.png" width={135} alt="logo" />
+        <h2>jb - 캡스톤 프로젝트</h2>
+      </div>
     </div>
-  );
-};
+  )
+}
 
-export default Home;
+export default Home

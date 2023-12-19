@@ -7,6 +7,20 @@
   width: 100vw;
 }
 
+/* 가로 배열 display: flex 
+footer 로고*/
+.container2 {
+  display: flex;
+  align-items: center;
+  margin: 25px;
+}
+.container h2 {
+  margin-left: 20px;
+  float: left;
+  font-style: normal;
+  color: azure;
+}
+
 .previewImage {
   height: 500px;
   width: 500px;
@@ -169,7 +183,6 @@
 .quantityControlButton:disabled {
   opacity: 0.25;
 }
-
 
 /* On mobile, make the .mintInfoContainer stack vertically */
 @media screen and (max-width: 850px) {
